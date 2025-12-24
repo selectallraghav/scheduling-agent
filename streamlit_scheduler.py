@@ -48,17 +48,17 @@ st.set_page_config(
 @st.cache_resource
 def get_services(_cache_version="v3.4"):
     """Initialize and cache services using Darwin API."""
-    # TalentRecruitClient now uses Darwin API only (no config needed)
+    # TalentRecruitClient wraps Darwinbox API for employee data
     try:
-        talent_recruit = TalentRecruitClient()
+        data_client = TalentRecruitClient()
     except Exception as e:
         st.error(f"Failed to initialize Darwin API client: {e}")
         return None, None, None, None
     
-    calendar_service = CalendarService(talent_recruit)
-    scheduling_engine = SchedulingEngine(calendar_service, talent_recruit)
-    email_service = EmailServiceMock(talent_recruit)
-    return talent_recruit, calendar_service, scheduling_engine, email_service
+    calendar_service = CalendarService(data_client)
+    scheduling_engine = SchedulingEngine(calendar_service, data_client)
+    email_service = EmailServiceMock(data_client)
+    return data_client, calendar_service, scheduling_engine, email_service
 
 # ============================================================================
 # SESSION STATE INITIALIZATION
@@ -119,8 +119,8 @@ def generate_conversation_title(messages: List[Dict[str, Any]]) -> str:
         
         # Check if content mentions a candidate name (try to get from global if available)
         try:
-            if 'talent_recruit' in globals() and talent_recruit:
-                candidates = talent_recruit.list_candidates()
+            if 'data_client' in globals() and data_client:
+                candidates = data_client.list_candidates()
                 for candidate in candidates:
                     if candidate.name in content:
                         candidate_name = candidate.name
@@ -242,7 +242,7 @@ def format_candidate_summary(candidate) -> str:
 
 def format_candidate_details(candidate) -> str:
     """Format detailed candidate information using structured formatter."""
-    personas = talent_recruit.get_related_personas_for_candidate(candidate.id)
+    personas = data_client.get_related_personas_for_candidate(candidate.id)
     return ResponseFormatter.format_candidate_details(candidate, personas)
 
 def format_proposals(proposals: List, candidate, show_all: bool = False) -> tuple[str, List[Dict[str, Any]]]:
@@ -369,7 +369,7 @@ def auto_extract_all_info(prompt: str) -> Dict[str, Any]:
     }
     
     # Extract candidate name with improved matching
-    candidates = talent_recruit.list_candidates()
+    candidates = data_client.list_candidates()
     prompt_lower = prompt.lower().strip()
     
     # Handle possessive queries like "john doe's manager" or "his manager"
@@ -475,7 +475,7 @@ def smart_suggest_next_action() -> Optional[str]:
 
 def handle_list_candidates(count: Optional[int] = None, offset: Optional[int] = None, reset_offset: bool = False) -> str:
     """Show candidates with structured response and pagination support."""
-    candidates = talent_recruit.list_candidates()
+    candidates = data_client.list_candidates()
     
     # Handle offset
     if reset_offset:
@@ -506,7 +506,7 @@ def handle_list_candidates(count: Optional[int] = None, offset: Optional[int] = 
     return ResponseFormatter.format_candidate_list(
         candidates_slice, 
         limit=limit, 
-        talent_recruit_client=talent_recruit,
+        data_client=data_client,
         total_count=len(candidates),
         current_offset=current_offset
     )
@@ -526,7 +526,7 @@ def handle_list_candidates_with_recruiters() -> str:
 
 def handle_list_candidates_with_hiring_managers() -> str:
     """List candidates with structured response showing hiring manager availability."""
-    candidates = talent_recruit.list_candidates()
+    candidates = data_client.list_candidates()
     return ResponseFormatter.format_personas_list(candidates, "hiring_manager")
 
 def handle_view_candidate_details(candidate_name: str = None) -> str:
@@ -536,7 +536,7 @@ def handle_view_candidate_details(candidate_name: str = None) -> str:
     
     if candidate_name:
         # Try to find candidate by name with improved matching
-        candidates = talent_recruit.list_candidates()
+        candidates = data_client.list_candidates()
         candidate_name_lower = candidate_name.lower().strip()
         
         # Try exact match first
@@ -577,14 +577,14 @@ def handle_view_candidate_details(candidate_name: str = None) -> str:
         candidate = st.session_state.selected_candidate
     
     if not candidate:
-        candidates = talent_recruit.list_candidates()
-        return f"🤔 I couldn't find a candidate named '{candidate_name}'. Could you try again?\n\n{ResponseFormatter.format_candidate_list(candidates, limit=10, talent_recruit_client=talent_recruit)}"
+        candidates = data_client.list_candidates()
+        return f"🤔 I couldn't find a candidate named '{candidate_name}'. Could you try again?\n\n{ResponseFormatter.format_candidate_list(candidates, limit=10, data_client=data_client)}"
     
     return format_candidate_details(candidate)
 
 def handle_select_candidate(candidate_name: str, ai_intent: Dict[str, Any]) -> str:
     """Select candidate and auto-progress if more info provided."""
-    candidates = talent_recruit.list_candidates()
+    candidates = data_client.list_candidates()
     
     # Try to find candidate with improved matching
     candidate = None
@@ -630,7 +630,7 @@ def handle_select_candidate(candidate_name: str, ai_intent: Dict[str, Any]) -> s
             f"• Type the full name\n"
             f"• Use a candidate number from the list\n"
             f"• Check spelling\n\n"
-            f"{ResponseFormatter.format_candidate_list(candidates, limit=10, talent_recruit_client=talent_recruit)}"
+            f"{ResponseFormatter.format_candidate_list(candidates, limit=10, data_client=data_client)}"
         )
     
     # Select candidate
@@ -697,7 +697,7 @@ def handle_configure_meeting(ai_intent: Dict[str, Any], prompt: str = "") -> str
     
     # If candidate name found but not selected, select it first
     if candidate_name and not st.session_state.selected_candidate:
-        candidates = talent_recruit.list_candidates()
+        candidates = data_client.list_candidates()
         candidate = None
         candidate_name_lower = candidate_name.lower().strip()
         
@@ -839,7 +839,7 @@ def handle_generate_proposals(show_all: bool = False) -> str:
         )
     
     # Get participants
-    personas = talent_recruit.get_related_personas_for_candidate(candidate.id)
+    personas = data_client.get_related_personas_for_candidate(candidate.id)
     participant_ids = [candidate.id]
     
     # Check if we have the required persona for the meeting type
@@ -1037,9 +1037,9 @@ def handle_start_over() -> str:
     return "✨ Starting fresh! Who would you like to schedule a meeting for?"
 
 # Initialize services using Darwin API (no configuration needed)
-talent_recruit, calendar_service, scheduling_engine, email_service = get_services()
+data_client, calendar_service, scheduling_engine, email_service = get_services()
 
-if talent_recruit is None:
+if data_client is None:
     st.error("Failed to initialize services. Please check your configuration.")
     st.stop()
 
@@ -1126,7 +1126,7 @@ def restore_conversation(conversation_entry: Dict[str, Any]):
     # Restore candidate if ID is available
     if candidate_id:
         try:
-            candidate = talent_recruit.get_candidate_by_id(candidate_id)
+            candidate = data_client.get_candidate_by_id(candidate_id)
             if candidate:
                 st.session_state.selected_candidate = candidate
             else:
@@ -1141,7 +1141,7 @@ def restore_conversation(conversation_entry: Dict[str, Any]):
             for msg in st.session_state.messages:
                 content = msg.get("content", "")
                 try:
-                    candidates = talent_recruit.list_candidates()
+                    candidates = data_client.list_candidates()
                     for candidate in candidates:
                         if candidate.name in content or f"**{candidate.name}**" in content:
                             st.session_state.selected_candidate = candidate
@@ -1422,7 +1422,7 @@ if prompt:
             if msg.get("role") == "assistant":
                 content = msg.get("content", "")
                 # Try to extract candidate name from recent assistant messages
-                candidates = talent_recruit.list_candidates()
+                candidates = data_client.list_candidates()
                 for candidate in candidates:
                     if candidate.name in content or f"**{candidate.name}**" in content:
                         # Found a candidate mentioned recently, use it as context
@@ -1610,7 +1610,7 @@ if prompt:
                 elif not candidate_name:
                     # Try to extract from prompt if it mentions a specific name
                     prompt_lower = prompt.lower()
-                    candidates = talent_recruit.list_candidates()
+                    candidates = data_client.list_candidates()
                     for cand in candidates:
                         if cand.name.lower() in prompt_lower or prompt_lower in cand.name.lower():
                             candidate_name = cand.name

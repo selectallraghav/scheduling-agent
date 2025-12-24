@@ -33,7 +33,7 @@ class ResponseFormatter:
     def format_candidate_list(
         candidates: List[Candidate], 
         limit: int = 50, 
-        talent_recruit_client=None,
+        data_client=None,
         total_count: Optional[int] = None,
         current_offset: int = 0
     ) -> str:
@@ -67,15 +67,15 @@ class ResponseFormatter:
         ])
         
         # Import here to avoid circular dependency
-        if talent_recruit_client is None:
+        if data_client is None:
             from services.talent_recruit_client import TalentRecruitClient
-            talent_recruit_client = TalentRecruitClient()
+            data_client = TalentRecruitClient()
         
         for i, candidate in enumerate(candidates[:display_count], 1):
             lines.append(f"{i}. **{candidate.name}** (Employee ID: {candidate.id})")
             
             # Get manager info for this candidate
-            personas = talent_recruit_client.get_related_personas_for_candidate(candidate.id)
+            personas = data_client.get_related_personas_for_candidate(candidate.id)
             
             # Show HRBP if available
             if "hrbp" in personas:
@@ -174,8 +174,8 @@ class ResponseFormatter:
         
         for candidate in candidates:
             from services.talent_recruit_client import TalentRecruitClient
-            talent_recruit = TalentRecruitClient()
-            personas = talent_recruit.get_related_personas_for_candidate(candidate.id)
+            data_client = TalentRecruitClient()
+            personas = data_client.get_related_personas_for_candidate(candidate.id)
             
             if persona_type in personas:
                 candidates_with.append((candidate, personas[persona_type]))

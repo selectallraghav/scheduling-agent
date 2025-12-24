@@ -7,7 +7,7 @@ import pytz
 
 from models.entities import MeetingProposal, MeetingRequest, TimeSlot
 from services.calendar_service import CalendarService
-from services.talent_recruit_mock import TalentRecruitClientMock
+from services.talent_recruit_client import TalentRecruitClient
 
 
 class SchedulingEngine:
@@ -16,11 +16,11 @@ class SchedulingEngine:
     def __init__(
         self,
         calendar_service: CalendarService,
-        talent_recruit_client: TalentRecruitClientMock
+        data_client: TalentRecruitClient
     ):
         """Initialize scheduling engine."""
         self.calendar_service = calendar_service
-        self.talent_recruit = talent_recruit_client
+        self.data_client = data_client
     
     def find_meeting_proposals(
         self,
@@ -50,7 +50,7 @@ class SchedulingEngine:
             List of meeting proposals sorted by score (best first)
         """
         # Get candidate
-        candidate = self.talent_recruit.get_candidate_by_id(request.candidate_id)
+        candidate = self.data_client.get_candidate_by_id(request.candidate_id)
         if not candidate:
             return []
         
@@ -87,7 +87,7 @@ class SchedulingEngine:
             if manager_id == request.candidate_id:
                 continue
             
-            manager = self.talent_recruit.get_manager_by_id(manager_id)
+            manager = self.data_client.get_manager_by_id(manager_id)
             if not manager:
                 continue
             
@@ -272,7 +272,7 @@ class SchedulingEngine:
             if participant_id == candidate.id:
                 tz = pytz.timezone(candidate.location_timezone)
             else:
-                manager = self.talent_recruit.get_manager_by_id(participant_id)
+                manager = self.data_client.get_manager_by_id(participant_id)
                 if not manager:
                     continue
                 tz = pytz.timezone(manager.location_timezone)

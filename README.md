@@ -1,6 +1,6 @@
 # Scheduling Agent - Apexon Candidate Engagement Bot
 
-A Streamlit-based prototype that automatically schedules "connect" meetings between new hires and key personas at Apexon (hiring manager, reporting manager, HRBP, etc.) based on their availability and constraints.
+A Streamlit-based conversational chatbot that automatically schedules "connect" meetings between new hires and key personas at Apexon (hiring manager, reporting manager, HRBP, etc.) based on their availability and constraints.
 
 ## Features
 
@@ -8,23 +8,28 @@ A Streamlit-based prototype that automatically schedules "connect" meetings betw
 - **Dual Calendar Support**: Handles both Apexon and Client calendars for managers, with Client calendar taking priority
 - **Constraint-Based Algorithm**: Respects business hours, working days, and deadline constraints
 - **Multi-Timezone Support**: Handles participants across different timezones (IST, PST, EST, etc.)
-- **Mock Services**: Simulates Talent Recruit data, calendar events, and email sending
-- **Interactive UI**: Clean Streamlit interface for selecting candidates, configuring meetings, and viewing proposals
+- **Darwin API Integration**: Fetches real employee and candidate data from Darwinbox
+- **Conversational UI**: Natural language chatbot interface for scheduling meetings
+- **Mock Services**: Simulates calendar events and email sending (calendar and email services are mocked)
 
 ## Project Structure
 
 ```
 .
-├── app.py                          # Main Streamlit application
+├── streamlit_scheduler.py         # Main Streamlit chatbot application
 ├── models/
 │   ├── __init__.py
 │   └── entities.py                 # Domain models (Candidate, Manager, Meeting, etc.)
 ├── services/
 │   ├── __init__.py
-│   ├── talent_recruit_mock.py      # Mock Talent Recruit service
-│   ├── calendar_service.py          # Calendar service with dual calendar logic
+│   ├── darwinbox_client.py         # Darwinbox API client
+│   ├── talent_recruit_client.py    # Employee data client (wraps Darwinbox API)
+│   ├── calendar_service.py         # Calendar service with dual calendar logic
 │   ├── scheduling_engine.py        # Core scheduling algorithm
-│   └── email_service_mock.py       # Mock email service
+│   ├── email_service_mock.py       # Mock email service
+│   ├── response_formatter.py       # Chatbot response formatting
+│   └── talent_recruit_mock.py      # Mock client for testing (legacy)
+├── .env.example                    # Environment variables template
 ├── requirements.txt
 └── README.md
 ```
@@ -44,38 +49,27 @@ pip install -r requirements.txt
 
 ## Configuration
 
-The application now integrates with the Talent Recruit API to fetch real candidate data. You need to configure the API credentials before running the application.
+The application integrates with the Darwinbox API to fetch real employee and candidate data. You need to configure the API credentials before running the application.
 
-### Option 1: Environment Variables
+### Environment Variables
 
-Set the following environment variables:
+Create a `.env` file in the project root (see `.env.example` for template):
 
 ```bash
-export TALENT_RECRUIT_BASE_URL="https://your-talent-recruit-api-url.com"
-export TALENT_RECRUIT_API_KEY="your-api-key-here"
-export TALENT_RECRUIT_USER_EMAIL="your-email@apexon.com"
+# OpenAI API Configuration (required)
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Darwinbox API Configuration (required)
+DARWINBOX_API_KEY=your-darwinbox-api-key-here
+DARWINBOX_BASE_URL=https://your-darwinbox-instance.com
 ```
 
-### Option 2: Streamlit Secrets
-
-Create a `.streamlit/secrets.toml` file (or use Streamlit Cloud secrets):
-
-```toml
-[TALENT_RECRUIT]
-BASE_URL = "https://your-talent-recruit-api-url.com"
-API_KEY = "your-api-key-here"
-USER_EMAIL = "your-email@apexon.com"
-```
-
-**Note:** The API key is sensitive. If lost, you'll need to request a new one from Talent Recruit as they don't store tokens.
+**Note:** 
+- Get your OpenAI API key from: https://platform.openai.com/api-keys
+- Get your Darwinbox API credentials from your Apexon administrator
+- The `.env` file is gitignored and will not be committed to the repository
 
 ## Usage
-
-### Standard UI Version
-Run the Streamlit app:
-```bash
-streamlit run app.py
-```
 
 ### Conversational Chatbot Version
 Run the chatbot interface:
@@ -83,9 +77,9 @@ Run the chatbot interface:
 streamlit run streamlit_scheduler.py
 ```
 
-Both apps will open in your default web browser at `http://localhost:8501`.
+The app will open in your default web browser at `http://localhost:8501`.
 
-**Note:** Make sure you've configured the Talent Recruit API credentials (see Configuration section above) before running the application.
+**Note:** Make sure you've configured the API credentials in your `.env` file (see Configuration section above) before running the application.
 
 ### Chatbot Commands
 
@@ -105,11 +99,12 @@ The conversational agent understands natural language. Try these commands:
 
 ## How It Works
 
-1. **Select a Candidate**: Choose from the list of synthetic candidates in the sidebar
-2. **Configure Meeting**: Set meeting type, duration, date window, and business hours
-3. **View Availability**: See busy slots for the selected manager
-4. **Generate Proposals**: Click "Generate Meeting Proposals" to find optimal meeting slots
-5. **Send Test Invites**: Click "Send Test Invites" to simulate sending email invitations
+1. **List Candidates**: Use natural language commands like "show me candidates" or "list 10 candidates"
+2. **Select a Candidate**: Choose a candidate by name or number from the list
+3. **Configure Meeting**: Set meeting type, duration, date range, and business hours via chat
+4. **Generate Proposals**: Ask the chatbot to "generate proposals" or "find meeting times"
+5. **Book Meeting**: Select a time slot by saying "option 2" or "book option 3"
+6. **Send Invites**: Confirm booking to simulate sending email invitations
 
 ## Key Components
 
@@ -133,29 +128,30 @@ The conversational agent understands natural language. Try these commands:
 - Returns top N proposals sorted by score
 
 ### Services
-- **Talent Recruit Client**: Real API integration to fetch candidate data from Talent Recruit
-  - Fetches candidates with "Offer Accepted" status
-  - Retrieves candidate documents
-  - Maps API responses to internal entities
+- **Darwinbox Client**: Real API integration to fetch employee data from Darwinbox
+  - Fetches employee information including employee IDs, names, and manager relationships
+  - Retrieves HRBP and direct manager information
+  - Maps API responses to internal `Candidate` and `Manager` entities
+- **Employee Data Client**: Wraps Darwinbox client and provides a unified interface for candidate and manager data
+- **Calendar Service**: Manages calendar availability with dual calendar support (Apexon + Client calendars)
+- **Scheduling Engine**: Core algorithm for finding optimal meeting time slots
 - **Email Service Mock**: Logs "sent" emails instead of actually sending them
 
-## Talent Recruit API Integration
+## Darwinbox API Integration
 
-The application integrates with the Talent Recruit API to fetch real candidate information:
+The application integrates with the Darwinbox Employee API to fetch real employee information:
 
-- **Candidate List API**: `/api/v1/gateway/apexon/offer/candidate/list`
-  - Fetches candidates with "Offer Accepted" substage
-  - Returns candidate details including job information, offer details, and recruiter info
-  
-- **Candidate Documents API**: `/api/v1/gateway/apexon/offer/candidate/document`
-  - Fetches documents for candidates in "Document Collection" stages
-  - Returns resume and job-related documents
+- **Employee Data API**: Fetches employee records with:
+  - Employee IDs, names, and contact information
+  - Direct manager relationships (hiring/reporting manager)
+  - HRBP (Human Resources Business Partner) assignments
+  - Manager contact details and email addresses
 
-The API client automatically maps the API response structure to internal `Candidate` and `Manager` entities for use throughout the application.
+The API client automatically maps the Darwinbox API response structure to internal `Candidate` and `Manager` entities for use throughout the application. See `DARWIN_API_FIELDS.md` for detailed API field mappings.
 
 ## Future Enhancements
 
-- ✅ Integration with real Talent Recruit API (Completed)
+- ✅ Integration with Darwinbox API (Completed)
 - Integration with Microsoft Graph API for calendar access
 - Real email sending via SMTP or email service
 - Support for recurring meetings

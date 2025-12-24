@@ -1,4 +1,4 @@
-"""Darwin API client service - Rebuilt from scratch using only Darwin API data."""
+"""Employee data client service - Uses Darwinbox API as the data source."""
 
 import os
 from datetime import date, timedelta
@@ -9,7 +9,16 @@ from services.darwinbox_client import DarwinboxClient
 
 
 class TalentRecruitClient:
-    """Client for employee data - uses Darwin API as the only data source."""
+    """
+    Client for employee and candidate data.
+    
+    This client wraps the Darwinbox API to provide a unified interface for
+    accessing employee information, candidates, and their associated managers
+    (HRBP, Hiring Manager, Reporting Manager).
+    
+    Note: The class name is kept for backward compatibility, but it now uses
+    Darwinbox API exclusively, not Talent Recruit API.
+    """
     
     def __init__(self):
         """Initialize client with Darwin API as the only data source."""

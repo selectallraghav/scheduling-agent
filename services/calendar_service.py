@@ -6,26 +6,28 @@ from typing import Literal
 import pytz
 
 from models.entities import CalendarEvent, Manager, TimeSlot
-from services.talent_recruit_mock import TalentRecruitClientMock
+from services.talent_recruit_client import TalentRecruitClient
 
 
 class CalendarService:
     """Service for managing calendar availability with dual calendar support."""
     
-    def __init__(self, talent_recruit_client: TalentRecruitClientMock):
-        """Initialize with talent recruit client."""
-        self.talent_recruit = talent_recruit_client
+    def __init__(self, data_client: TalentRecruitClient):
+        """Initialize with employee data client."""
+        self.data_client = data_client
         self._calendar_events: dict[str, list[CalendarEvent]] = {}
         self._initialize_synthetic_events()
     
     def _initialize_synthetic_events(self):
         """Generate synthetic calendar events for managers."""
+        # Note: These are synthetic manager IDs for calendar simulation
+        # In production, these would come from the data client
         managers = [
-            self.talent_recruit.get_manager_by_id("mgr_001"),
-            self.talent_recruit.get_manager_by_id("mgr_002"),
-            self.talent_recruit.get_manager_by_id("mgr_003"),
-            self.talent_recruit.get_manager_by_id("mgr_004"),
-            self.talent_recruit.get_manager_by_id("mgr_005"),
+            self.data_client.get_manager_by_id("mgr_001"),
+            self.data_client.get_manager_by_id("mgr_002"),
+            self.data_client.get_manager_by_id("mgr_003"),
+            self.data_client.get_manager_by_id("mgr_004"),
+            self.data_client.get_manager_by_id("mgr_005"),
         ]
         
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -130,7 +132,7 @@ class CalendarService:
         Returns:
             List of free TimeSlots
         """
-        manager = self.talent_recruit.get_manager_by_id(user_id)
+        manager = self.data_client.get_manager_by_id(user_id)
         if not manager:
             return []
         
@@ -247,7 +249,7 @@ class CalendarService:
         end_date: datetime
     ) -> list[CalendarEvent]:
         """Get all busy slots (merged) for a user in the date range."""
-        manager = self.talent_recruit.get_manager_by_id(user_id)
+        manager = self.data_client.get_manager_by_id(user_id)
         if not manager:
             return []
         

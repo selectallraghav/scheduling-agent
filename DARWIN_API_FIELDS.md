@@ -152,7 +152,7 @@ The implementation handles multiple field name formats:
 
 ## Implementation Notes
 
-- The `TalentRecruitClient` now uses Darwin API as the primary data source
+- The `TalentRecruitClient` uses Darwinbox API as the primary data source
 - Recruiter information is no longer available (removed from code)
 - Missing fields (email, role, etc.) are generated with defaults
 - Manager information is extracted from Darwin API fields
@@ -171,4 +171,4 @@ This will display:
 - Statistics about data availability
 - Detailed employee information
 - All available fields
-- Test results with TalentRecruitClient
+- Test results with TalentRecruitClient (which wraps Darwinbox API)

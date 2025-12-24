@@ -6,15 +6,15 @@ from typing import Optional
 import pytz
 
 from models.entities import MeetingProposal, TimeSlot
-from services.talent_recruit_mock import TalentRecruitClientMock
+from services.talent_recruit_client import TalentRecruitClient
 
 
 class EmailServiceMock:
     """Mock email service that logs emails instead of sending them."""
     
-    def __init__(self, talent_recruit_client: TalentRecruitClientMock):
+    def __init__(self, data_client: TalentRecruitClient):
         """Initialize email service."""
-        self.talent_recruit = talent_recruit_client
+        self.data_client = data_client
         self.sent_emails: list[dict] = []
     
     def send_meeting_invite(
@@ -29,7 +29,7 @@ class EmailServiceMock:
         Returns:
             dict with email details
         """
-        candidate = self.talent_recruit.get_candidate_by_id(candidate_id)
+        candidate = self.data_client.get_candidate_by_id(candidate_id)
         if not candidate:
             return {}
         
@@ -42,7 +42,7 @@ class EmailServiceMock:
                 to_emails.append(candidate.email)
                 participant_names.append(candidate.name)
             else:
-                manager = self.talent_recruit.get_manager_by_id(pid)
+                manager = self.data_client.get_manager_by_id(pid)
                 if manager:
                     to_emails.append(manager.email)
                     participant_names.append(manager.name)
@@ -89,7 +89,7 @@ class EmailServiceMock:
         for pid, name in zip(proposal.time_slot.participants, participant_names):
             if pid == candidate.id:
                 continue
-            manager = self.talent_recruit.get_manager_by_id(pid)
+            manager = self.data_client.get_manager_by_id(pid)
             if manager:
                 manager_name = name
                 manager_tz = pytz.timezone(manager.location_timezone)
@@ -144,7 +144,7 @@ This is an important part of {candidate.name}'s onboarding process, and I've fou
         
         for pid, name in zip(proposal.time_slot.participants, participant_names):
             if pid != candidate.id:
-                manager = self.talent_recruit.get_manager_by_id(pid)
+                manager = self.data_client.get_manager_by_id(pid)
                 if manager:
                     body += f"""• {name} ({manager.email}) - {manager.role}
 """

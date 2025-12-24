@@ -1,4 +1,4 @@
-"""Mock Talent Recruit service for synthetic data."""
+"""Mock employee data service for synthetic/testing data."""
 
 from datetime import date, timedelta
 from typing import Optional
@@ -7,7 +7,13 @@ from models.entities import Candidate, Manager
 
 
 class TalentRecruitClientMock:
-    """Mock client for Talent Recruit API."""
+    """
+    Mock client for employee data (used for testing/development).
+    
+    Note: This is a legacy mock service. The production code uses
+    TalentRecruitClient which wraps Darwinbox API. This mock provides
+    synthetic data for testing purposes.
+    """
     
     def __init__(self):
         """Initialize with synthetic data."""
