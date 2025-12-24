@@ -1,1 +1,0 @@
-# Deprecated - use .env file
