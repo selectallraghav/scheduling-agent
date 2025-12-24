@@ -31,8 +31,15 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Temporary files
+~$*
+*.tmp
+*.temp
 
-# Helper scripts with potential secrets (optional - you can keep them if sanitized)
-# create_repo.sh
-# set_env.sh
-# run_app.sh
+# Microsoft Office temporary files
+~$*.docx
+~$*.doc
+~$*.xlsx
+~$*.xls
+~$*.pptx
+~$*.ppt
